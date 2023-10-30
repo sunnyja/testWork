@@ -4,38 +4,57 @@ services:
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWD}
     networks:
       - app-test
     volumes:
       - './docker/mysql:/var/lib/mysql'
+    restart: always
+    container_name: mysql
+    ports:
+      - '3307:3306'
 
   php:
     build:
       context: ./docker/php
     volumes:
-      - './src:/var/www/html'
+      - './:/app'
     networks:
       - app-test
     depends_on:
       - mysql
+    restart: always
+    container_name: php-fpm
+#    environment:
+#      PHP_IDE_CONFIG: 'serverName=Docker'
 
   nginx:
     image: nginx:latest
     ports:
       - '80:80'
     volumes:
-      - './src:/var/www/html'
+      - './:/app'
       - './docker/nginx/conf.d:/etc/nginx/conf.d'
     networks:
       - app-test
     depends_on:
       - php
+    restart: always
+    container_name: nginx
 
   redis:
     image: redis:latest
     networks:
       - app-test
+    ports:
+      - '6378:6379'
+    container_name: redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_REPLICATION_MODE=master
 
   kafka:
     image: bitnami/kafka:latest
